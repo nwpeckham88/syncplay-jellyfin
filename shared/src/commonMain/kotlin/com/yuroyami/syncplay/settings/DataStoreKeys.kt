@@ -15,6 +15,11 @@ object DataStoreKeys {
     const val MISC_PLAYER_ENGINE = "misc_player_engine"
     const val MISC_GESTURES = "misc_gestures"
 
+    /* Jellyfin */
+    const val JELLYFIN_SERVER_URL = "jellyfin_server_url"
+    const val JELLYFIN_API_KEY = "jellyfin_api_key"
+    const val JELLYFIN_USER_ID = "jellyfin_user_id"
+
     /* General */
     const val CATEG_GLOBAL_GENERAL = "categ_global_general"
     const val PREF_REMEMBER_INFO = "pref_remember_info"
@@ -99,5 +104,4 @@ object DataStoreKeys {
     const val PREF_INROOM_RECONNECTION_INTERVAL = "pref_inroom_reconnection_interval"
     const val PREF_INROOM_PERFORMANCE_UI_MODE = "pref_inroom_performance_ui_mode"
     const val PREF_INROOM_RESET_DEFAULT = "pref_inroom_reset_default"
-
 }

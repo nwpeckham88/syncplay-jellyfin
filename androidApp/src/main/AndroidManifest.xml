@@ -9,9 +9,8 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".SyncplayApp"
@@ -23,8 +22,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="false"
         android:usesCleartextTraffic="true"
-        android:enableOnBackInvokedCallback="false"
-        >
+        android:enableOnBackInvokedCallback="false">
 
         <activity
             android:name=".HomeActivity"
@@ -51,6 +49,14 @@
             android:launchMode="singleTask"
             android:windowSoftInputMode="adjustNothing"
             tools:ignore="DiscouragedApi" />
+
+        <activity
+            android:name=".JellyfinActivity"
+            android:configChanges="orientation|keyboardHidden|screenLayout|screenSize|smallestScreenSize"
+            android:exported="false"
+            android:imeOptions="flagNoExtractUi"
+            android:theme="@style/SyncplayTheme"
+            android:windowSoftInputMode="adjustPan" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

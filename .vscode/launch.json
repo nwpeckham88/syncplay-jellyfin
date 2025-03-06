@@ -1,0 +1,32 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "android-app",
+            "name": "Debug App",
+            "request": "launch",
+            "appSrcRoot": "${workspaceRoot}/androidApp/src/main",
+            "apkFile": "${workspaceRoot}/androidApp/build/outputs/apk/debug/androidApp-debug.apk",
+            "autoStartAdb": true,
+            "adbPort": 5037,
+            "preLaunchTask": "assembleDebug"
+        },
+        {
+            "type": "android-app",
+            "name": "Run Tests",
+            "request": "launch",
+            "appSrcRoot": "${workspaceRoot}/androidApp/src/debug",
+            "apkFile": "${workspaceRoot}/androidApp/build/outputs/apk/debug/androidApp-debug.apk",
+            "targetClass": "com.yuroyami.syncplay.JellyfinTestRunner",
+            "autoStartAdb": true,
+            "adbPort": 5037,
+            "preLaunchTask": "assembleDebug"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Build & Test",
+            "configurations": ["Debug App", "Run Tests"]
+        }
+    ]
+}

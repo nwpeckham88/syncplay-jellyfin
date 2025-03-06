@@ -77,7 +77,11 @@ kotlin {
             /* Network client */
             val ktor = "3.0.0-beta-2"
             implementation("io.ktor:ktor-network:$ktor")
-            //api("io.ktor:ktor-network-tls:$ktor")
+            implementation("io.ktor:ktor-client-core:$ktor")
+            implementation("io.ktor:ktor-client-content-negotiation:$ktor")
+            implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor")
+            implementation("io.ktor:ktor-client-auth:$ktor")
+            implementation("io.ktor:ktor-client-logging:$ktor")
 
             /* Android's "Uri" class but rewritten for Kotlin multiplatform */
             implementation("com.eygraber:uri-kmp:0.0.18")
@@ -112,9 +116,25 @@ kotlin {
             /* Annotations */
             api("androidx.annotation:annotation:1.9.0-alpha02")
 
+            /* Image loading */
+            implementation("media.kamel:kamel-image:0.9.1")
+
         }
 
         androidMain.dependencies {
+            implementation("io.ktor:ktor-client-android:$ktor")
+            implementation("io.ktor:ktor-client-okhttp:$ktor")
+            implementation("io.ktor:ktor-client-mock:$ktor")
+
+            androidTestImplementation("androidx.test:runner:1.5.2")
+            androidTestImplementation("androidx.test:rules:1.5.0")
+            androidTestImplementation("androidx.test.ext:junit:1.1.5")
+            androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.6.0")
+            androidTestImplementation("androidx.compose.ui:ui-test-manifest:1.6.0")
+            androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+            androidTestImplementation("io.mockk:mockk-android:1.13.9")
+            debugImplementation("androidx.compose.ui:ui-test-manifest:1.6.0")
+            debugImplementation("androidx.compose.ui:ui-tooling:1.6.0")
             /* Backward compatibility APIs */
             api("androidx.core:core-ktx:1.14.0-alpha01")
             api("androidx.appcompat:appcompat:1.7.0")
