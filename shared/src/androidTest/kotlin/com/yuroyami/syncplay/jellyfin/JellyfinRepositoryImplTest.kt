@@ -31,14 +31,16 @@ class JellyfinRepositoryImplTest {
                 "/Users/test-user/Views" -> {
                     respond(
                         content = """
-                        [
-                            {
-                                "Id": "1",
-                                "Name": "Movies",
-                                "Type": "CollectionFolder",
-                                "ImageTags": {"Primary": "tag1"}
-                            }
-                        ]
+                        {
+                            "Items": [
+                                {
+                                    "Id": "1",
+                                    "Name": "Movies",
+                                    "Type": "CollectionFolder",
+                                    "ImageTags": {"Primary": "tag1"}
+                                }
+                            ]
+                        }
                         """.trimIndent(),
                         status = HttpStatusCode.OK,
                         headers = headersOf(HttpHeaders.ContentType, "application/json")
@@ -47,15 +49,17 @@ class JellyfinRepositoryImplTest {
                 "/Users/test-user/Items" -> {
                     respond(
                         content = """
-                        [
-                            {
-                                "Id": "movie1",
-                                "Name": "Test Movie",
-                                "Type": "Movie",
-                                "Overview": "A test movie",
-                                "ImageTags": {"Primary": "tag1"}
-                            }
-                        ]
+                        {
+                            "Items": [
+                                {
+                                    "Id": "movie1",
+                                    "Name": "Test Movie",
+                                    "Type": "Movie",
+                                    "Overview": "A test movie",
+                                    "ImageTags": {"Primary": "tag1"}
+                                }
+                            ]
+                        }
                         """.trimIndent(),
                         status = HttpStatusCode.OK,
                         headers = headersOf(HttpHeaders.ContentType, "application/json")

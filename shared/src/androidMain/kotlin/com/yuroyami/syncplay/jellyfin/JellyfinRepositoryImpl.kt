@@ -1,13 +1,11 @@
 package com.yuroyami.syncplay.jellyfin
 
 import io.ktor.client.HttpClient
+import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.call.body
 import io.ktor.client.engine.android.Android
 import io.ktor.client.plugins.DefaultRequest
 import io.ktor.client.plugins.HttpTimeout
-import io.ktor.client.plugins.auth.Auth
-import io.ktor.client.plugins.auth.providers.BearerTokens
-import io.ktor.client.plugins.auth.providers.bearer
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
@@ -25,6 +23,12 @@ private data class AuthenticationResult(
     val AccessToken: String,
     val ServerId: String,
     val UserId: String
+)
+
+@Serializable
+private data class AuthenticationRequest(
+    val Username: String,
+    val Pw: String
 )
 
 @Serializable
@@ -47,8 +51,19 @@ private data class JellyfinItem(
     val ImageTags: Map<String, String> = emptyMap()
 )
 
-class JellyfinRepositoryImpl : JellyfinRepository {
-    private val client = HttpClient(Android) {
+@Serializable
+private data class JellyfinItemsResponse<T>(
+    val Items: List<T> = emptyList()
+)
+
+class JellyfinRepositoryImpl(engine: HttpClientEngine? = null) : JellyfinRepository {
+    private val client = if (engine == null) {
+        HttpClient(Android) { configureClient() }
+    } else {
+        HttpClient(engine) { configureClient() }
+    }
+
+    private fun io.ktor.client.HttpClientConfig<*>.configureClient() {
         install(ContentNegotiation) {
             json(Json {
                 ignoreUnknownKeys = true
@@ -56,9 +71,6 @@ class JellyfinRepositoryImpl : JellyfinRepository {
                 isLenient = true
             })
         }
-        
-        install(Auth)
-        
         install(HttpTimeout) {
             requestTimeoutMillis = 30000
             connectTimeoutMillis = 15000
@@ -85,7 +97,7 @@ class JellyfinRepositoryImpl : JellyfinRepository {
             val finalServerUrl = serverUrl.removeSuffix("/")
             val response = client.post("$finalServerUrl/Users/AuthenticateByName") {
                 contentType(ContentType.Application.Json)
-                setBody("""{"Username":"$username","Pw":"$password"}""")
+                setBody(AuthenticationRequest(username, password))
             }
             
             val result = response.body<AuthenticationResult>()
@@ -95,12 +107,6 @@ class JellyfinRepositoryImpl : JellyfinRepository {
                 userId = result.UserId
             )
             config = newConfig
-
-            client.plugin(Auth).bearer {
-                loadTokens {
-                    BearerTokens(result.AccessToken, "")
-                }
-            }
 
             Result.success(newConfig)
         } catch (e: Exception) {
@@ -113,8 +119,12 @@ class JellyfinRepositoryImpl : JellyfinRepository {
             try {
                 val currentConfig = requireConfig()
                 
-                val response = client.get("${currentConfig.serverUrl}/Users/${currentConfig.userId}/Views")
-                val libraries = response.body<List<JellyfinLibrary>>()
+                val response = client.get("${currentConfig.serverUrl}/Users/${currentConfig.userId}/Views") {
+                    url {
+                        parameters.append("api_key", currentConfig.apiKey)
+                    }
+                }
+                val libraries = response.body<JellyfinItemsResponse<JellyfinLibrary>>().Items
                 
                 Result.success(libraries.map { library ->
                     JellyfinMediaItem(
@@ -146,7 +156,7 @@ class JellyfinRepositoryImpl : JellyfinRepository {
                     }
                 }
                 
-                val items = response.body<List<JellyfinItem>>()
+                val items = response.body<JellyfinItemsResponse<JellyfinItem>>().Items
                 Result.success(items.map { item ->
                     JellyfinMediaItem(
                         id = item.Id,

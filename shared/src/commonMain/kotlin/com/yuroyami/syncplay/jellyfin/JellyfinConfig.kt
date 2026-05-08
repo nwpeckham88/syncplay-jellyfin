@@ -25,4 +25,5 @@ interface JellyfinRepository {
     suspend fun getLibraries(): Result<List<JellyfinMediaItem>>
     suspend fun getMediaItems(parentId: String): Result<List<JellyfinMediaItem>>
     suspend fun getStreamUrl(itemId: String): Result<String>
+    fun close()
 }
