@@ -135,4 +135,6 @@ private class TestJellyfinRepository : JellyfinRepository {
 
     override suspend fun getStreamUrl(itemId: String): Result<String> =
         nextStreamUrlResult ?: Result.failure(Exception("No test result configured"))
+
+    override fun close() = Unit
 }

@@ -57,29 +57,13 @@ private data class JellyfinItemsResponse<T>(
 )
 
 class JellyfinRepositoryImpl(engine: HttpClientEngine? = null) : JellyfinRepository {
-    private val client = if (engine == null) HttpClient(Android) {
-        install(ContentNegotiation) {
-            json(Json {
-                ignoreUnknownKeys = true
-                prettyPrint = true
-                isLenient = true
-            })
-        }
+    private val client = if (engine == null) {
+        HttpClient(Android) { configureClient() }
+    } else {
+        HttpClient(engine) { configureClient() }
+    }
 
-        install(HttpTimeout) {
-            requestTimeoutMillis = 30000
-            connectTimeoutMillis = 15000
-            socketTimeoutMillis = 60000
-        }
-
-        install(DefaultRequest) {
-            contentType(ContentType.Application.Json)
-        }
-
-        install(Logging) {
-            level = LogLevel.INFO
-        }
-    } else HttpClient(engine) {
+    private fun io.ktor.client.HttpClientConfig<*>.configureClient() {
         install(ContentNegotiation) {
             json(Json {
                 ignoreUnknownKeys = true
@@ -206,7 +190,7 @@ class JellyfinRepositoryImpl(engine: HttpClientEngine? = null) : JellyfinReposit
         return checkNotNull(config) { "Must authenticate before making API calls" }
     }
 
-    fun close() {
+    override fun close() {
         client.close()
     }
 }

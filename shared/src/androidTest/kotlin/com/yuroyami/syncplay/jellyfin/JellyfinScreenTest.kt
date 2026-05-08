@@ -107,6 +107,7 @@ private class TestJellyfinViewModel : JellyfinViewModel(
         override suspend fun getLibraries() = Result.success(emptyList<JellyfinMediaItem>())
         override suspend fun getMediaItems(parentId: String) = Result.success(emptyList<JellyfinMediaItem>())
         override suspend fun getStreamUrl(itemId: String) = Result.success("")
+        override fun close() = Unit
     },
     onJoinRoom = {}
 ) {
