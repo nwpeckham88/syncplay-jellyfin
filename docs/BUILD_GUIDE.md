@@ -53,10 +53,10 @@ Ctrl/Cmd + Shift + P -> "Tasks: Run Task" -> "Build & Install"
 ./gradlew installDebug
 
 # Launch main app
-adb shell am start -n com.yuroyami.syncplay/.HomeActivity
+adb shell am start -n com.reddnek.syncplay.new/com.yuroyami.syncplay.HomeActivity
 
 # Launch test runner (debug builds only)
-adb shell am start -n com.yuroyami.syncplay/.JellyfinTestRunner
+adb shell am start -n com.reddnek.syncplay.new/com.yuroyami.syncplay.JellyfinTestRunner
 ```
 
 ## Testing the Integration
@@ -88,9 +88,12 @@ adb shell am start -n com.yuroyami.syncplay/.JellyfinTestRunner
 
 ### Manual Testing
 1. Build and install debug variant
-2. Launch "Jellyfin Test Runner" from app launcher
-3. Enter Jellyfin server details
-4. Run desired tests
+2. Start the local Jellyfin harness with `scripts/jellyfin-test-env.sh reset`
+3. Launch "Jellyfin Test Runner" from app launcher, or use `scripts/jellyfin-device-test.sh run`
+4. Enter Jellyfin server details if the runner does not auto-read intent extras yet
+5. Run desired tests
+
+For physical phones, onn 4K Pro, and NVIDIA Shield, use `http://<host-lan-ip>:8096` as the Jellyfin server URL. Android AVD can use `http://10.0.2.2:8096`; other emulators may need the host LAN URL.
 
 ## Troubleshooting
 

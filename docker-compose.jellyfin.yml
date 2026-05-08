@@ -1,0 +1,16 @@
+version: "3.8"
+
+services:
+  jellyfin:
+    image: ${JELLYFIN_IMAGE:-jellyfin/jellyfin:10.10.7}
+    container_name: ${JELLYFIN_CONTAINER_NAME:-syncplay-jellyfin-test}
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    ports:
+      - "${JELLYFIN_BIND_ADDRESS:-0.0.0.0}:${JELLYFIN_PORT:-8096}:8096"
+    volumes:
+      - ./.jellyfin-test/config:/config
+      - ./.jellyfin-test/cache:/cache
+      - ./.jellyfin-test/media:/media:ro
+    environment:
+      JELLYFIN_PublishedServerUrl: ${JELLYFIN_PUBLIC_URL:-http://127.0.0.1:8096}
+    restart: "no"

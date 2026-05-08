@@ -1,155 +1,155 @@
 # Manual Testing Guide for Jellyfin Integration
 
-## Debug Test Runner
-For manual testing with a real Jellyfin server, the app includes a test runner interface in debug builds.
+Use this guide when validating the Jellyfin integration on a real Android phone, onn 4K Pro, NVIDIA Shield, or Android emulator.
 
-### How to Access
-1. Build and install the debug variant of the app
-2. Look for "Jellyfin Test Runner" in your app launcher
-3. Or launch via adb:
+## Start the Local Server
+
+From the repository root:
+
 ```bash
-adb shell am start -n com.yuroyami.syncplay.debug/com.yuroyami.syncplay.JellyfinTestRunner
+scripts/jellyfin-test-env.sh reset
 ```
 
-### Features
-- Input fields for server URL, username, and password
-- Individual test buttons for specific features
-- Full test suite execution
-- Live test output display
-- Performance metrics tracking
+This creates a fresh Jellyfin instance, seeds a Movies library, and prints the URLs to use from host, emulator, and physical devices.
 
-### Running Tests
-1. Enter your Jellyfin server details:
-   - Server URL (e.g., http://192.168.1.100:8096)
-   - Username
-   - Password
+Run this only on a trusted local network. The local harness uses plain HTTP and default test credentials.
 
-2. Choose a test to run:
-   - "Test Authentication": Verifies server connection and credentials
-   - "Test Library Access": Lists available media libraries
-   - "Run All Tests": Executes the complete test suite
+Default test account:
 
-3. Monitor the output area for:
-   - Test progress and results
-   - API call metrics
-   - Error messages if any
+```text
+Username: syncplaytest
+Password: testpass123
+```
 
-### Test Cases
+Use a custom MP4:
 
-#### Authentication
-- Valid credentials should show success message
-- Invalid credentials should show appropriate error
-- Server URL format should be validated
-- Check API token is received
+```bash
+JELLYFIN_TEST_MEDIA=/absolute/path/to/movie.mp4 scripts/jellyfin-test-env.sh reset
+```
 
-#### Library Access
-- All media libraries should be listed
-- Library types should be correctly identified
-- Thumbnails URLs should be properly constructed
-- Permissions should be respected
+## Build and Install
 
-#### Media Browsing
-- Items within libraries should load
-- Metadata should be complete
-- Thumbnails should be accessible
-- Pagination should work (if implemented)
+```bash
+./gradlew assembleDebug
+scripts/jellyfin-device-test.sh list
+JELLYFIN_BASE_URL=http://<host-lan-ip>:8096 scripts/jellyfin-device-test.sh run
+```
 
-#### Streaming
-- Stream URLs should be generated
-- URLs should include valid API tokens
-- Direct stream options should be available
-- Check URL format matches server configuration
+The debug app id is `com.reddnek.syncplay.new`.
 
-### Performance Metrics
-The test runner tracks:
-1. API call durations
-2. Success/failure rates
-3. Average response times
-4. Network efficiency
+Launch the Jellyfin Test Runner manually if needed:
 
-### Common Issues
-1. Server Connection:
-   - Check server is running and accessible
-   - Verify network connectivity
-   - Confirm port is open and correct
+```bash
+adb shell am start -n com.reddnek.syncplay.new/com.yuroyami.syncplay.JellyfinTestRunner
+```
 
-2. Authentication:
-   - Verify user exists and is active
-   - Check password is correct
-   - Confirm user has necessary permissions
+For one target device:
 
-3. Media Access:
-   - Verify libraries exist
-   - Check media files are present
-   - Confirm user has library access
-   - Validate file permissions
+```bash
+adb -s <adb-serial> shell am start -n com.reddnek.syncplay.new/com.yuroyami.syncplay.JellyfinTestRunner
+```
 
-### Testing Environment Setup
-1. Local Testing:
-   ```bash
-   docker run -d \
-     --name jellyfin \
-     -p 8096:8096 \
-     -v /path/to/media:/media \
-     jellyfin/jellyfin:latest
-   ```
+## Server URL Rules
 
-2. Test Account Setup:
-   - Create dedicated test user
-   - Set appropriate permissions
-   - Add test media content
+| Test target | URL to enter |
+| --- | --- |
+| Android emulator (AVD) | `http://10.0.2.2:8096` |
+| Genymotion or other emulator | `http://<host-lan-ip>:8096` |
+| Android phone | `http://<host-lan-ip>:8096` |
+| onn 4K Pro | `http://<host-lan-ip>:8096` |
+| NVIDIA Shield | `http://<host-lan-ip>:8096` |
 
-3. Network Configuration:
-   - Note server IP address
-   - Configure firewall if needed
-   - Use HTTP for initial testing
+`localhost` and `127.0.0.1` only work from the development machine itself. They do not work from physical Android devices.
 
-### Reporting Issues
-When reporting problems, include:
-1. Test output
-2. Server version
-3. Network configuration
-4. Steps to reproduce
-5. Performance metrics
-6. Error messages
-7. Media details if relevant
+## Debug Test Runner
 
-### Best Practices
-1. Start with authentication tests
-2. Verify library access before media tests
-3. Test with various media types
-4. Check error handling
-5. Monitor performance metrics
-6. Document any issues found
-7. Test network edge cases
+Debug builds include a launcher activity named "Jellyfin Test Runner".
 
-### Troubleshooting
-1. Authentication Failed:
-   - Check server URL format
-   - Verify credentials
-   - Check server logs
+Use it to run:
 
-2. Missing Libraries:
-   - Verify user permissions
-   - Check library configuration
-   - Confirm media paths
+1. Authentication test.
+2. Library access test.
+3. Media browsing test.
+4. Stream URL generation test.
+5. Full test suite.
 
-3. Stream Issues:
-   - Verify media exists
-   - Check streaming settings
-   - Confirm network access
+The current runner may still require manual entry of server URL and credentials until app-side configuration intake is updated. The device helper passes the server URL extra by default. It only passes username/password extras when `JELLYFIN_PASS_CREDENTIAL_EXTRAS=true` because Android may log intent extras.
 
-4. Performance Problems:
-   - Monitor API metrics
-   - Check network conditions
-   - Verify server resources
+## Happy Path Checklist
 
-### Next Steps
-After successful testing:
-1. Document any discovered issues
-2. Note performance metrics
-3. Suggest improvements
-4. Test edge cases
-5. Verify error handling
-6. Check resource usage
-7. Consider scalability
+1. Start the local Jellyfin server with `scripts/jellyfin-test-env.sh reset`.
+2. Confirm the server opens from the host at `http://127.0.0.1:8096`.
+3. Confirm the server opens from another LAN device at `http://<host-lan-ip>:8096`.
+4. Build the debug APK with `./gradlew assembleDebug`.
+5. Install and launch the test runner.
+6. Log in with `syncplaytest` / `testpass123`.
+7. Confirm the Movies library appears.
+8. Open the seeded movie item.
+9. Start playback through the Syncplay flow.
+10. Pause, resume, back out, and relaunch the app.
+
+## Android TV Checklist
+
+Run these checks on onn 4K Pro and NVIDIA Shield when hardware is available:
+
+1. D-pad can move through every login field and action.
+2. Focus is visible on all selectable controls.
+3. Keyboard entry works with remote and paired keyboard.
+4. Back button returns to the previous screen without closing unexpectedly.
+5. Playback starts from the seeded H.264/AAC file.
+6. Pause/resume works from the remote.
+7. Sleep/wake keeps or recovers the Jellyfin connection.
+8. Reopening the app preserves or cleanly restores the last server config.
+9. Device logs do not contain full access tokens or token-bearing URLs.
+
+## Phone Checklist
+
+1. Test portrait and landscape if the device allows rotation.
+2. Verify soft keyboard does not hide login actions.
+3. Verify Wi-Fi reconnect behavior.
+4. Verify background/foreground behavior during playback setup.
+5. Verify the same seeded movie starts playback.
+
+## Logs and Results
+
+Collect Android logs after a run:
+
+```bash
+JELLYFIN_BASE_URL=http://<host-lan-ip>:8096 scripts/jellyfin-device-test.sh collect
+```
+
+Collect Jellyfin logs:
+
+```bash
+scripts/jellyfin-test-env.sh logs -- --tail=300
+```
+
+Device logs are written under `test-results/jellyfin/`, which is ignored by git.
+
+## Common Issues
+
+### Device Cannot Reach Server
+
+1. Use the host LAN IP, not `localhost`.
+2. Confirm the phone or TV box is on the same network as the host.
+3. Disable VPN temporarily.
+4. Allow inbound traffic to port `8096` through the host firewall.
+5. If you are not testing physical devices, restart with `JELLYFIN_BIND_ADDRESS=127.0.0.1` to avoid LAN exposure.
+
+### Test Runner Does Not Open
+
+1. Rebuild and reinstall with `./gradlew assembleDebug`.
+2. Confirm the package is installed: `adb shell pm list packages | grep reddnek.syncplay`.
+3. Launch with `com.reddnek.syncplay.new/com.yuroyami.syncplay.JellyfinTestRunner`.
+
+### Seeded Movie Missing
+
+1. Run `scripts/jellyfin-test-env.sh reset`.
+2. Check `.jellyfin-test/media/movies` for the MP4.
+3. Check Jellyfin logs for scan failures.
+
+### Playback Fails
+
+1. Start with the default H.264/AAC MP4.
+2. Collect device logs.
+3. Note the player engine in use, device model, Android version, and media details.

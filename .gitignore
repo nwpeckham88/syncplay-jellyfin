@@ -40,3 +40,5 @@ libpostproc.so
 libswresample.so
 lbswscale.so
 Pods/
+.jellyfin-test/
+test-results/
