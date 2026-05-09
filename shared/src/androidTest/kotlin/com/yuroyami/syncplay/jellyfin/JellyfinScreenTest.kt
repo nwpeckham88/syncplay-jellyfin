@@ -172,5 +172,13 @@ private fun createTestViewModel(
     restoreSavedConfig = false,
     restoreConfig = { null },
     persistConfig = {},
-    loadJoinInfo = { JoinInfo() }
+    loadJoinInfo = {
+        JoinInfo(
+            username = "user",
+            roomname = "room",
+            address = "syncplay.test",
+            port = 8997,
+            password = ""
+        )
+    }
 )
