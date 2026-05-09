@@ -28,6 +28,13 @@ import com.yuroyami.syncplay.jellyfin.rememberJellyfinNavigation
 import com.yuroyami.syncplay.models.JoinInfo
 import com.yuroyami.syncplay.watchroom.homeCallback
 
+/**
+ * Minimal home screen entry point for joining Syncplay rooms directly and, on Android,
+ * continuing into the Jellyfin browsing flow.
+ *
+ * @param config saved join values used to prefill the form.
+ * @param modifier optional layout modifier for the screen container.
+ */
 @Composable
 fun HomeScreen(
     config: HomeConfig,

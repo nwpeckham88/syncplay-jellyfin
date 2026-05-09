@@ -70,8 +70,9 @@ class JellyfinRepositoryImpl(
     private var config: JellyfinConfig? = null
 
     companion object {
+        private const val CLIENT_VERSION = "0.15.1"
         private const val AUTH_HEADER =
-            "MediaBrowser Client=\"Syncplay\", Device=\"Android\", DeviceId=\"syncplay-jellyfin\", Version=\"0.15.1\""
+            "MediaBrowser Client=\"Syncplay\", Device=\"Android\", DeviceId=\"syncplay-jellyfin\", Version=\"$CLIENT_VERSION\""
     }
 
     override suspend fun authenticate(
