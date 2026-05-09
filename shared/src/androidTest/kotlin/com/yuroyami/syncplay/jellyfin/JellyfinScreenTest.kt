@@ -4,8 +4,6 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import org.junit.Rule
 import org.junit.Test
-import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.runTest
 
 class JellyfinScreenTest {
     @get:Rule
@@ -14,7 +12,7 @@ class JellyfinScreenTest {
     @Test
     fun loginScreen_showsAllFields() {
         // Given
-        val testViewModel = TestJellyfinViewModel()
+        val testViewModel = createTestViewModel()
 
         // When
         composeTestRule.setContent {
@@ -32,8 +30,9 @@ class JellyfinScreenTest {
     @Test
     fun loginScreen_disablesButtonDuringLoading() {
         // Given
-        val testViewModel = TestJellyfinViewModel()
-        testViewModel.setLoginState(LoginState.Loading)
+        val testViewModel = createTestViewModel().apply {
+            loginState = LoginState.Loading
+        }
 
         // When
         composeTestRule.setContent {
@@ -47,8 +46,9 @@ class JellyfinScreenTest {
     @Test
     fun loginScreen_showsErrorMessage() {
         // Given
-        val testViewModel = TestJellyfinViewModel()
-        testViewModel.setLoginState(LoginState.Error("Invalid credentials"))
+        val testViewModel = createTestViewModel().apply {
+            loginState = LoginState.Error("Invalid credentials")
+        }
 
         // When
         composeTestRule.setContent {
@@ -62,11 +62,12 @@ class JellyfinScreenTest {
     @Test
     fun browserScreen_showsLibraries() {
         // Given
-        val testViewModel = TestJellyfinViewModel()
-        testViewModel.setLibraries(listOf(
-            JellyfinMediaItem("1", "Movies", "library", ""),
-            JellyfinMediaItem("2", "TV Shows", "library", "")
-        ))
+        val testViewModel = createTestViewModel().apply {
+            libraries = listOf(
+                JellyfinMediaItem("1", "Movies", "library", ""),
+                JellyfinMediaItem("2", "TV Shows", "library", "")
+            )
+        }
 
         // When
         composeTestRule.setContent {
@@ -81,13 +82,14 @@ class JellyfinScreenTest {
     @Test
     fun browserScreen_selectingLibraryLoadsItems() {
         // Given
-        val testViewModel = TestJellyfinViewModel()
-        testViewModel.setLibraries(listOf(
-            JellyfinMediaItem("1", "Movies", "library", "")
-        ))
-        testViewModel.setMediaItems(listOf(
-            JellyfinMediaItem("m1", "Test Movie", "movie", "A test movie")
-        ))
+        val testViewModel = createTestViewModel().apply {
+            libraries = listOf(
+                JellyfinMediaItem("1", "Movies", "library", "")
+            )
+            mediaItems = listOf(
+                JellyfinMediaItem("m1", "Test Movie", "movie", "A test movie")
+            )
+        }
 
         // When
         composeTestRule.setContent {
@@ -100,7 +102,7 @@ class JellyfinScreenTest {
     }
 }
 
-private class TestJellyfinViewModel : JellyfinViewModel(
+private fun createTestViewModel() = JellyfinViewModel(
     repository = object : JellyfinRepository {
         override suspend fun authenticate(serverUrl: String, username: String, password: String) = 
             Result.success(JellyfinConfig("", "", ""))
@@ -108,17 +110,9 @@ private class TestJellyfinViewModel : JellyfinViewModel(
         override suspend fun getMediaItems(parentId: String) = Result.success(emptyList<JellyfinMediaItem>())
         override suspend fun getStreamUrl(itemId: String) = Result.success("")
     },
-    onJoinRoom = {}
-) {
-    fun setLoginState(state: LoginState) {
-        loginState = state
-    }
-
-    fun setLibraries(items: List<JellyfinMediaItem>) {
-        libraries = items
-    }
-
-    fun setMediaItems(items: List<JellyfinMediaItem>) {
-        mediaItems = items
-    }
-}
+    onJoinRoom = {},
+    restoreSavedConfig = false,
+    restoreConfig = { null },
+    persistConfig = {},
+    loadJoinInfo = { com.yuroyami.syncplay.models.JoinInfo() }
+)

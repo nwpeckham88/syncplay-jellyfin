@@ -22,7 +22,19 @@ class JellyfinViewModelTest {
         testRepository = TestJellyfinRepository()
         viewModel = JellyfinViewModel(
             repository = testRepository,
-            onJoinRoom = { joinInfo -> capturedJoinInfo = joinInfo }
+            onJoinRoom = { joinInfo -> capturedJoinInfo = joinInfo },
+            restoreSavedConfig = false,
+            restoreConfig = { null },
+            persistConfig = {},
+            loadJoinInfo = {
+                JoinInfo(
+                    username = "user",
+                    roomname = "room",
+                    address = "syncplay.test",
+                    port = 8997,
+                    password = ""
+                )
+            }
         )
     }
 

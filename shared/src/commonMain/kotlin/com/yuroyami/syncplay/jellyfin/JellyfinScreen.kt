@@ -1,5 +1,9 @@
 package com.yuroyami.syncplay.jellyfin
 
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -143,8 +147,7 @@ fun JellyfinBrowserScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(8.dp)
             ) {
-                items(mediaItems.size) { index ->
-                    val item = mediaItems[index]
+                items(mediaItems) { item ->
                     MediaItemCard(
                         item = item,
                         onClick = { viewModel.selectMedia(item) }
@@ -206,8 +209,7 @@ fun ErrorSnackbar(
             TextButton(onClick = onDismiss) {
                 Text("Dismiss")
             }
-        },
-        dismissAction = onDismiss
+        }
     ) {
         Text(message)
     }

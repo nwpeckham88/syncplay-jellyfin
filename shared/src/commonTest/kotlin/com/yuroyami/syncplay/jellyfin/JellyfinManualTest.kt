@@ -26,7 +26,7 @@ object JellyfinManualTest {
     private lateinit var repository: JellyfinRepository
 
     fun setup() {
-        repository = JellyfinRepositoryImpl()
+        repository = createJellyfinRepository()
         JellyfinDebug.reset()
 
         // Subscribe to debug events

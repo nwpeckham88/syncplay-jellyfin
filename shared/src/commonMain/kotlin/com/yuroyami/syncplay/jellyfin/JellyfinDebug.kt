@@ -29,7 +29,7 @@ object JellyfinDebug {
         _performanceMetrics.value = PerformanceMetrics()
     }
 
-    fun measureCall(endpoint: String, block: suspend () -> Result<*>): Result<*> {
+    suspend fun measureCall(endpoint: String, block: suspend () -> Result<*>): Result<*> {
         val startTime = System.nanoTime()
         return try {
             block().also { result ->
