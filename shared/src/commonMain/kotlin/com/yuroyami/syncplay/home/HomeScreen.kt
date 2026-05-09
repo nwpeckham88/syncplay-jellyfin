@@ -119,15 +119,14 @@ fun HomeScreen(
             Button(
                 onClick = {
                     val resolvedPort = port ?: return@Button
-                    homeCallback?.onJoin(
-                        JoinInfo(
-                            username = username.trim(),
-                            roomname = roomName.trim(),
-                            address = serverAddress.trim(),
-                            port = resolvedPort,
-                            password = password
-                        ).remember().get()
-                    )
+                    val joinInfo = JoinInfo(
+                        username = username.trim(),
+                        roomname = roomName.trim(),
+                        address = serverAddress.trim(),
+                        port = resolvedPort,
+                        password = password
+                    ).remember().get()
+                    homeCallback?.onJoin(joinInfo)
                 },
                 enabled = canJoin,
                 modifier = Modifier.weight(1f)
