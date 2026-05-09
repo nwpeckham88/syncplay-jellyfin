@@ -125,8 +125,9 @@ fun HomeScreen(
                         address = serverAddress.trim(),
                         port = resolvedPort,
                         password = password
-                    ).remember().get()
-                    homeCallback?.onJoin(joinInfo)
+                    )
+                    joinInfo.remember()
+                    homeCallback?.onJoin(joinInfo.get())
                 },
                 enabled = canJoin,
                 modifier = Modifier.weight(1f)
