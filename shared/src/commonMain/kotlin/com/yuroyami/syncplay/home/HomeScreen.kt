@@ -33,7 +33,8 @@ import com.yuroyami.syncplay.watchroom.homeCallback
  * continuing into the Jellyfin browsing flow.
  *
  * The screen delegates room joins through the shared `homeCallback`, which is initialized by
- * the host platform before this composable is shown.
+ * the host platform before this composable is shown. Join submissions call `JoinInfo.remember()`
+ * before `get()` so the current form values are persisted using the app's existing join flow.
  *
  * @param config saved join values used to prefill the form.
  * @param modifier optional layout modifier for the screen container.

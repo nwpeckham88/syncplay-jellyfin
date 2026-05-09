@@ -66,7 +66,11 @@ class JellyfinViewModel(
             repository.authenticate(serverUrl, username, password)
                 .onSuccess { jellyfinConfig ->
                     config = jellyfinConfig
-                    persistConfig(jellyfinConfig)
+                    runCatching {
+                        persistConfig(jellyfinConfig)
+                    }.onFailure { persistenceError ->
+                        errorMessage = persistenceError.message
+                    }
                     loginState = LoginState.Success
                     loadLibraries()
                     uiState = JellyfinUiState.Browser
@@ -117,7 +121,12 @@ class JellyfinViewModel(
                     )
                     
                     // Create room info with saved Syncplay settings
-                    val syncplayConfig = loadJoinInfo()
+                    val syncplayConfig = runCatching {
+                        loadJoinInfo()
+                    }.getOrElse {
+                        errorMessage = it.message
+                        JoinInfo()
+                    }
                     val joinInfo = syncplayConfig.copy(
                         roomname = "jellyfin-${item.name}"
                     )

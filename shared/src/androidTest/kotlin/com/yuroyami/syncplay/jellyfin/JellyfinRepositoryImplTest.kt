@@ -107,6 +107,22 @@ class JellyfinRepositoryImplTest {
     }
 
     @Test
+    fun `applyConfig allows library requests without re-authentication`() = runTest {
+        repository.applyConfig(
+            JellyfinConfig(
+                serverUrl = "http://test.com",
+                apiKey = "test-token",
+                userId = "test-user"
+            )
+        )
+
+        val result = repository.getLibraries()
+
+        assertTrue(result.isSuccess)
+        assertEquals("Movies", result.getOrNull()?.single()?.name)
+    }
+
+    @Test
     fun `getMediaItems returns items for library`() = runTest {
         // Given
         repository.authenticate("http://test.com", "test", "password").getOrThrow()
