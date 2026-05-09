@@ -124,7 +124,9 @@ class JellyfinViewModel(
                     val syncplayConfig = runCatching {
                         loadJoinInfo()
                     }.getOrElse {
-                        errorMessage = it.message
+                        errorMessage = "Failed to load saved connection settings"
+                        // Falling back to an empty JoinInfo keeps the current flow moving while
+                        // still surfacing the settings problem to the user.
                         JoinInfo()
                     }
                     val joinInfo = syncplayConfig.copy(
