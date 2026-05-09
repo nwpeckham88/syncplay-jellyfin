@@ -29,22 +29,22 @@ class JellyfinViewModel(
     private var config: JellyfinConfig? = null
 
     var uiState by mutableStateOf<JellyfinUiState>(JellyfinUiState.Login)
-        internal set
+        private set
 
     var loginState by mutableStateOf<LoginState>(LoginState.Initial)
-        internal set
+        private set
 
     var libraries by mutableStateOf<List<JellyfinMediaItem>>(emptyList())
-        internal set
+        private set
 
     var selectedLibrary by mutableStateOf<JellyfinMediaItem?>(null)
-        internal set
+        private set
 
     var mediaItems by mutableStateOf<List<JellyfinMediaItem>>(emptyList())
-        internal set
+        private set
 
     var errorMessage by mutableStateOf<String?>(null)
-        internal set
+        private set
 
     init {
         if (restoreSavedConfig) {

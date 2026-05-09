@@ -72,7 +72,7 @@ class JellyfinRepositoryImplTest {
             }
         }
 
-        repository = JellyfinRepositoryImpl(mockEngine)
+        repository = JellyfinRepositoryImpl(createJellyfinHttpClient(mockEngine))
     }
 
     @Test
@@ -145,7 +145,7 @@ class JellyfinRepositoryImplTest {
                 status = HttpStatusCode.Unauthorized
             )
         }
-        repository = JellyfinRepositoryImpl(mockEngine)
+        repository = JellyfinRepositoryImpl(createJellyfinHttpClient(mockEngine))
 
         // When
         val result = repository.authenticate(

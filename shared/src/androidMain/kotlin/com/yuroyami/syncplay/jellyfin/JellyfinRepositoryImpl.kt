@@ -4,7 +4,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.call.body
 import io.ktor.client.engine.android.Android
-import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
@@ -65,8 +65,6 @@ private data class JellyfinItem(
 class JellyfinRepositoryImpl(
     private val client: HttpClient = createJellyfinHttpClient()
 ) : JellyfinRepository {
-    constructor(engine: MockEngine) : this(createJellyfinHttpClient(engine))
-
     private var config: JellyfinConfig? = null
 
     companion object {
@@ -198,13 +196,13 @@ class JellyfinRepositoryImpl(
     }
 }
 
-private fun createJellyfinHttpClient(engine: MockEngine? = null): HttpClient {
-    return if (engine != null) {
-        HttpClient(engine) {
+internal fun createJellyfinHttpClient(engine: HttpClientEngine? = null): HttpClient {
+    return when (engine) {
+        null -> HttpClient(Android) {
             configureJellyfinClient()
         }
-    } else {
-        HttpClient(Android) {
+
+        else -> HttpClient(engine) {
             configureJellyfinClient()
         }
     }

@@ -32,6 +32,9 @@ import com.yuroyami.syncplay.watchroom.homeCallback
  * Minimal home screen entry point for joining Syncplay rooms directly and, on Android,
  * continuing into the Jellyfin browsing flow.
  *
+ * The screen delegates room joins through the shared `homeCallback`, which is initialized by
+ * the host platform before this composable is shown.
+ *
  * @param config saved join values used to prefill the form.
  * @param modifier optional layout modifier for the screen container.
  */
