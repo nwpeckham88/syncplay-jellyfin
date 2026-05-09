@@ -1,20 +1,18 @@
 package com.yuroyami.syncplay.jellyfin
 
 import io.ktor.client.HttpClient
+import io.ktor.client.HttpClientConfig
 import io.ktor.client.call.body
 import io.ktor.client.engine.android.Android
-import io.ktor.client.plugins.DefaultRequest
+import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.HttpTimeout
-import io.ktor.client.plugins.auth.Auth
-import io.ktor.client.plugins.auth.providers.BearerTokens
-import io.ktor.client.plugins.auth.providers.bearer
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
-import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.Serializable
@@ -28,11 +26,28 @@ private data class AuthenticationResult(
 )
 
 @Serializable
+private data class AuthenticateByNameRequest(
+    val Username: String,
+    val Pw: String
+)
+
+@Serializable
+private data class JellyfinLibraryResponse(
+    val Items: List<JellyfinLibrary> = emptyList()
+)
+
+@Serializable
 private data class JellyfinLibrary(
     val Id: String,
     val Name: String,
     val Type: String,
-    val ImageTags: Map<String, String>
+    val CollectionType: String? = null,
+    val ImageTags: Map<String, String> = emptyMap()
+)
+
+@Serializable
+private data class JellyfinItemResponse(
+    val Items: List<JellyfinItem> = emptyList()
 )
 
 @Serializable
@@ -47,34 +62,16 @@ private data class JellyfinItem(
     val ImageTags: Map<String, String> = emptyMap()
 )
 
-class JellyfinRepositoryImpl : JellyfinRepository {
-    private val client = HttpClient(Android) {
-        install(ContentNegotiation) {
-            json(Json {
-                ignoreUnknownKeys = true
-                prettyPrint = true
-                isLenient = true
-            })
-        }
-        
-        install(Auth)
-        
-        install(HttpTimeout) {
-            requestTimeoutMillis = 30000
-            connectTimeoutMillis = 15000
-            socketTimeoutMillis = 60000
-        }
-        
-        install(DefaultRequest) {
-            contentType(ContentType.Application.Json)
-        }
-        
-        install(Logging) {
-            level = LogLevel.INFO
-        }
-    }
-
+class JellyfinRepositoryImpl(
+    private val client: HttpClient = createJellyfinHttpClient()
+) : JellyfinRepository {
     private var config: JellyfinConfig? = null
+
+    companion object {
+        private const val CLIENT_VERSION = "0.15.1"
+        private const val AUTH_HEADER =
+            "MediaBrowser Client=\"Syncplay\", Device=\"Android\", DeviceId=\"syncplay-jellyfin\", Version=\"$CLIENT_VERSION\""
+    }
 
     override suspend fun authenticate(
         serverUrl: String,
@@ -84,10 +81,16 @@ class JellyfinRepositoryImpl : JellyfinRepository {
         try {
             val finalServerUrl = serverUrl.removeSuffix("/")
             val response = client.post("$finalServerUrl/Users/AuthenticateByName") {
-                contentType(ContentType.Application.Json)
-                setBody("""{"Username":"$username","Pw":"$password"}""")
+                contentType(io.ktor.http.ContentType.Application.Json)
+                headers.append(HttpHeaders.Authorization, AUTH_HEADER)
+                setBody(
+                    AuthenticateByNameRequest(
+                        Username = username,
+                        Pw = password
+                    )
+                )
             }
-            
+
             val result = response.body<AuthenticationResult>()
             val newConfig = JellyfinConfig(
                 serverUrl = finalServerUrl,
@@ -96,35 +99,36 @@ class JellyfinRepositoryImpl : JellyfinRepository {
             )
             config = newConfig
 
-            client.plugin(Auth).bearer {
-                loadTokens {
-                    BearerTokens(result.AccessToken, "")
-                }
-            }
-
             Result.success(newConfig)
         } catch (e: Exception) {
             Result.failure(Exception("Failed to authenticate: ${e.message}", e))
         }
     } as Result<JellyfinConfig>
 
-    override suspend fun getLibraries(): Result<List<JellyfinMediaItem>> = 
+    override suspend fun getLibraries(): Result<List<JellyfinMediaItem>> =
         JellyfinDebug.measureCall("/Users/${config?.userId}/Views") {
             try {
                 val currentConfig = requireConfig()
-                
-                val response = client.get("${currentConfig.serverUrl}/Users/${currentConfig.userId}/Views")
-                val libraries = response.body<List<JellyfinLibrary>>()
-                
+
+                val response = client.get("${currentConfig.serverUrl}/Users/${currentConfig.userId}/Views") {
+                    url {
+                        parameters.append("api_key", currentConfig.apiKey)
+                    }
+                }
+                val libraries = response.body<JellyfinLibraryResponse>().Items
+
                 Result.success(libraries.map { library ->
                     JellyfinMediaItem(
                         id = library.Id,
                         name = library.Name,
-                        type = library.Type,
+                        type = library.CollectionType ?: library.Type,
                         overview = "",
-                        imageUrl = if (library.ImageTags.containsKey("Primary")) {
-                            "${currentConfig.serverUrl}/Items/${library.Id}/Images/Primary?api_key=${currentConfig.apiKey}"
-                        } else null
+                        imageUrl = buildPrimaryImageUrl(
+                            baseUrl = currentConfig.serverUrl,
+                            itemId = library.Id,
+                            apiKey = currentConfig.apiKey,
+                            imageTags = library.ImageTags
+                        )
                     )
                 })
             } catch (e: Exception) {
@@ -132,11 +136,11 @@ class JellyfinRepositoryImpl : JellyfinRepository {
             }
         } as Result<List<JellyfinMediaItem>>
 
-    override suspend fun getMediaItems(parentId: String): Result<List<JellyfinMediaItem>> = 
+    override suspend fun getMediaItems(parentId: String): Result<List<JellyfinMediaItem>> =
         JellyfinDebug.measureCall("/Users/${config?.userId}/Items") {
             try {
                 val currentConfig = requireConfig()
-                
+
                 val response = client.get("${currentConfig.serverUrl}/Users/${currentConfig.userId}/Items") {
                     url {
                         parameters.append("ParentId", parentId)
@@ -145,8 +149,8 @@ class JellyfinRepositoryImpl : JellyfinRepository {
                         parameters.append("api_key", currentConfig.apiKey)
                     }
                 }
-                
-                val items = response.body<List<JellyfinItem>>()
+
+                val items = response.body<JellyfinItemResponse>().Items
                 Result.success(items.map { item ->
                     JellyfinMediaItem(
                         id = item.Id,
@@ -156,9 +160,12 @@ class JellyfinRepositoryImpl : JellyfinRepository {
                         seriesName = item.SeriesName,
                         seasonNumber = item.ParentIndexNumber,
                         episodeNumber = item.IndexNumber,
-                        imageUrl = if (item.ImageTags.containsKey("Primary")) {
-                            "${currentConfig.serverUrl}/Items/${item.Id}/Images/Primary?api_key=${currentConfig.apiKey}"
-                        } else null
+                        imageUrl = buildPrimaryImageUrl(
+                            baseUrl = currentConfig.serverUrl,
+                            itemId = item.Id,
+                            apiKey = currentConfig.apiKey,
+                            imageTags = item.ImageTags
+                        )
                     )
                 })
             } catch (e: Exception) {
@@ -166,7 +173,7 @@ class JellyfinRepositoryImpl : JellyfinRepository {
             }
         } as Result<List<JellyfinMediaItem>>
 
-    override suspend fun getStreamUrl(itemId: String): Result<String> = 
+    override suspend fun getStreamUrl(itemId: String): Result<String> =
         JellyfinDebug.measureCall("/Videos/$itemId/stream") {
             try {
                 val currentConfig = requireConfig()
@@ -180,7 +187,56 @@ class JellyfinRepositoryImpl : JellyfinRepository {
         return checkNotNull(config) { "Must authenticate before making API calls" }
     }
 
+    override fun applyConfig(config: JellyfinConfig) {
+        this.config = config
+    }
+
     override fun close() {
         client.close()
+    }
+}
+
+internal fun createJellyfinHttpClient(engine: HttpClientEngine? = null): HttpClient {
+    return when (engine) {
+        null -> HttpClient(Android) {
+            configureJellyfinClient()
+        }
+
+        else -> HttpClient(engine) {
+            configureJellyfinClient()
+        }
+    }
+}
+
+private fun HttpClientConfig<*>.configureJellyfinClient() {
+    install(ContentNegotiation) {
+        json(Json {
+            ignoreUnknownKeys = true
+            prettyPrint = true
+            isLenient = true
+        })
+    }
+
+    install(HttpTimeout) {
+        requestTimeoutMillis = 30000
+        connectTimeoutMillis = 15000
+        socketTimeoutMillis = 60000
+    }
+
+    install(Logging) {
+        level = LogLevel.INFO
+    }
+}
+
+private fun buildPrimaryImageUrl(
+    baseUrl: String,
+    itemId: String,
+    apiKey: String,
+    imageTags: Map<String, String>
+): String? {
+    return if (imageTags.containsKey("Primary")) {
+        "$baseUrl/Items/$itemId/Images/Primary?api_key=$apiKey"
+    } else {
+        null
     }
 }

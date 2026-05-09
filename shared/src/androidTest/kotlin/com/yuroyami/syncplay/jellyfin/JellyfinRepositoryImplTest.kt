@@ -31,14 +31,17 @@ class JellyfinRepositoryImplTest {
                 "/Users/test-user/Views" -> {
                     respond(
                         content = """
-                        [
-                            {
-                                "Id": "1",
-                                "Name": "Movies",
-                                "Type": "CollectionFolder",
-                                "ImageTags": {"Primary": "tag1"}
-                            }
-                        ]
+                        {
+                            "Items": [
+                                {
+                                    "Id": "1",
+                                    "Name": "Movies",
+                                    "Type": "CollectionFolder",
+                                    "CollectionType": "movies",
+                                    "ImageTags": {"Primary": "tag1"}
+                                }
+                            ]
+                        }
                         """.trimIndent(),
                         status = HttpStatusCode.OK,
                         headers = headersOf(HttpHeaders.ContentType, "application/json")
@@ -47,15 +50,17 @@ class JellyfinRepositoryImplTest {
                 "/Users/test-user/Items" -> {
                     respond(
                         content = """
-                        [
-                            {
-                                "Id": "movie1",
-                                "Name": "Test Movie",
-                                "Type": "Movie",
-                                "Overview": "A test movie",
-                                "ImageTags": {"Primary": "tag1"}
-                            }
-                        ]
+                        {
+                            "Items": [
+                                {
+                                    "Id": "movie1",
+                                    "Name": "Test Movie",
+                                    "Type": "Movie",
+                                    "Overview": "A test movie",
+                                    "ImageTags": {"Primary": "tag1"}
+                                }
+                            ]
+                        }
                         """.trimIndent(),
                         status = HttpStatusCode.OK,
                         headers = headersOf(HttpHeaders.ContentType, "application/json")
@@ -67,7 +72,7 @@ class JellyfinRepositoryImplTest {
             }
         }
 
-        repository = JellyfinRepositoryImpl(mockEngine)
+        repository = JellyfinRepositoryImpl(createJellyfinHttpClient(mockEngine))
     }
 
     @Test
@@ -99,6 +104,22 @@ class JellyfinRepositoryImplTest {
         val libraries = result.getOrNull()!!
         assertEquals(1, libraries.size)
         assertEquals("Movies", libraries[0].name)
+    }
+
+    @Test
+    fun `applyConfig allows library requests without re-authentication`() = runTest {
+        repository.applyConfig(
+            JellyfinConfig(
+                serverUrl = "http://test.com",
+                apiKey = "test-token",
+                userId = "test-user"
+            )
+        )
+
+        val result = repository.getLibraries()
+
+        assertTrue(result.isSuccess)
+        assertEquals("Movies", result.getOrNull()?.single()?.name)
     }
 
     @Test
@@ -140,7 +161,7 @@ class JellyfinRepositoryImplTest {
                 status = HttpStatusCode.Unauthorized
             )
         }
-        repository = JellyfinRepositoryImpl(mockEngine)
+        repository = JellyfinRepositoryImpl(createJellyfinHttpClient(mockEngine))
 
         // When
         val result = repository.authenticate(

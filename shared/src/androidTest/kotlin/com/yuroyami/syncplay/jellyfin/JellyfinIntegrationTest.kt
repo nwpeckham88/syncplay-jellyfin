@@ -3,10 +3,10 @@ package com.yuroyami.syncplay.jellyfin
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.yuroyami.syncplay.JellyfinActivity
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import kotlinx.coroutines.test.runTest
 
 @RunWith(AndroidJUnit4::class)
 class JellyfinIntegrationTest {

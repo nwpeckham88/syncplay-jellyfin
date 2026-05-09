@@ -18,7 +18,11 @@ import kotlinx.coroutines.launch
 
 class JellyfinViewModel(
     private val repository: JellyfinRepository,
-    private val onJoinRoom: (JoinInfo) -> Unit
+    private val onJoinRoom: (JoinInfo) -> Unit,
+    private val restoreSavedConfig: Boolean = true,
+    private val restoreConfig: suspend () -> JellyfinConfig? = { readSavedJellyfinConfig() },
+    private val persistConfig: suspend (JellyfinConfig) -> Unit = { saveJellyfinConfig(it) },
+    private val loadJoinInfo: suspend () -> JoinInfo = { readSavedJoinInfo() }
 ) {
     private val viewModelScope = CoroutineScope(Job() + Dispatchers.Main)
     private val lyricist = Lyricist("en", Stringies)
@@ -43,38 +47,16 @@ class JellyfinViewModel(
         private set
 
     init {
-        // Restore saved Jellyfin config if available
-        viewModelScope.launch {
-            val savedUrl = valueSuspendingly(DataStoreKeys.JELLYFIN_SERVER_URL, "")
-            val savedApiKey = valueSuspendingly(DataStoreKeys.JELLYFIN_API_KEY, "")
-            val savedUserId = valueSuspendingly(DataStoreKeys.JELLYFIN_USER_ID, "")
-            
-            if (savedUrl.isNotEmpty() && savedApiKey.isNotEmpty() && savedUserId.isNotEmpty()) {
-                config = JellyfinConfig(
-                    serverUrl = savedUrl,
-                    apiKey = savedApiKey,
-                    userId = savedUserId
-                )
-                loadLibraries()
-                uiState = JellyfinUiState.Browser
+        if (restoreSavedConfig) {
+            viewModelScope.launch {
+                restoreConfig()?.let { savedConfig ->
+                    config = savedConfig
+                    repository.applyConfig(savedConfig)
+                    loadLibraries()
+                    uiState = JellyfinUiState.Browser
+                }
             }
         }
-    }
-
-    private suspend fun saveConfig(config: JellyfinConfig) {
-        writeValue(DataStoreKeys.JELLYFIN_SERVER_URL, config.serverUrl)
-        writeValue(DataStoreKeys.JELLYFIN_API_KEY, config.apiKey)
-        writeValue(DataStoreKeys.JELLYFIN_USER_ID, config.userId)
-    }
-
-    private suspend fun loadSyncplayConfig(): JoinInfo {
-        return JoinInfo(
-            username = valueSuspendingly(DataStoreKeys.MISC_JOIN_USERNAME, ""),
-            roomname = valueSuspendingly(DataStoreKeys.MISC_JOIN_ROOMNAME, ""),
-            address = valueSuspendingly(DataStoreKeys.MISC_JOIN_SERVER_ADDRESS, ""),
-            port = valueSuspendingly(DataStoreKeys.MISC_JOIN_SERVER_PORT, 8997),
-            password = valueSuspendingly(DataStoreKeys.MISC_JOIN_SERVER_PW, "")
-        )
     }
 
     fun login(serverUrl: String, username: String, password: String) {
@@ -84,7 +66,11 @@ class JellyfinViewModel(
             repository.authenticate(serverUrl, username, password)
                 .onSuccess { jellyfinConfig ->
                     config = jellyfinConfig
-                    saveConfig(jellyfinConfig)
+                    runCatching {
+                        persistConfig(jellyfinConfig)
+                    }.onFailure { persistenceError ->
+                        errorMessage = persistenceError.message
+                    }
                     loginState = LoginState.Success
                     loadLibraries()
                     uiState = JellyfinUiState.Browser
@@ -135,7 +121,12 @@ class JellyfinViewModel(
                     )
                     
                     // Create room info with saved Syncplay settings
-                    val syncplayConfig = loadSyncplayConfig()
+                    val syncplayConfig = runCatching {
+                        loadJoinInfo()
+                    }.getOrElse {
+                        errorMessage = "Failed to load saved connection settings"
+                        return@onSuccess
+                    }
                     val joinInfo = syncplayConfig.copy(
                         roomname = "jellyfin-${item.name}"
                     )
@@ -151,6 +142,38 @@ class JellyfinViewModel(
     fun clearError() {
         errorMessage = null
     }
+}
+
+private suspend fun saveJellyfinConfig(config: JellyfinConfig) {
+    writeValue(DataStoreKeys.JELLYFIN_SERVER_URL, config.serverUrl)
+    writeValue(DataStoreKeys.JELLYFIN_API_KEY, config.apiKey)
+    writeValue(DataStoreKeys.JELLYFIN_USER_ID, config.userId)
+}
+
+private suspend fun readSavedJellyfinConfig(): JellyfinConfig? {
+    val savedUrl = valueSuspendingly(DataStoreKeys.JELLYFIN_SERVER_URL, "")
+    val savedApiKey = valueSuspendingly(DataStoreKeys.JELLYFIN_API_KEY, "")
+    val savedUserId = valueSuspendingly(DataStoreKeys.JELLYFIN_USER_ID, "")
+
+    return if (savedUrl.isNotEmpty() && savedApiKey.isNotEmpty() && savedUserId.isNotEmpty()) {
+        JellyfinConfig(
+            serverUrl = savedUrl,
+            apiKey = savedApiKey,
+            userId = savedUserId
+        )
+    } else {
+        null
+    }
+}
+
+private suspend fun readSavedJoinInfo(): JoinInfo {
+    return JoinInfo(
+        username = valueSuspendingly(DataStoreKeys.MISC_JOIN_USERNAME, ""),
+        roomname = valueSuspendingly(DataStoreKeys.MISC_JOIN_ROOMNAME, ""),
+        address = valueSuspendingly(DataStoreKeys.MISC_JOIN_SERVER_ADDRESS, ""),
+        port = valueSuspendingly(DataStoreKeys.MISC_JOIN_SERVER_PORT, 8997),
+        password = valueSuspendingly(DataStoreKeys.MISC_JOIN_SERVER_PW, "")
+    )
 }
 
 sealed class JellyfinUiState {

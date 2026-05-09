@@ -8,8 +8,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import cafe.adriel.lyricist.Lyricist
-import com.yuroyami.syncplay.lyricist.Stringies
 import com.yuroyami.syncplay.models.JoinInfo
 import io.kamel.image.KamelImage
 import io.kamel.image.asyncPainterResource
@@ -23,11 +21,15 @@ fun JellyfinContainer(
     onJoinRoom: (JoinInfo) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val viewModel = remember { 
+    val repository = remember { createJellyfinRepository() }
+    val viewModel = remember(repository, onJoinRoom) {
         JellyfinViewModel(
-            repository = JellyfinRepositoryImpl(),
+            repository = repository,
             onJoinRoom = onJoinRoom
         )
+    }
+    DisposableEffect(repository) {
+        onDispose(repository::close)
     }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -60,7 +62,7 @@ fun JellyfinImage(
             resource = asyncPainterResource(url),
             contentDescription = contentDescription,
             modifier = modifier.aspectRatio(aspectRatio),
-            onLoading = { progress -> 
+            onLoading = {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -68,7 +70,7 @@ fun JellyfinImage(
                     CircularProgressIndicator()
                 }
             },
-            onFailure = { exception ->
+            onFailure = {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
